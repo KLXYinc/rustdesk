@@ -54,26 +54,154 @@ void setTemporaryPasswordLengthDialog(
 }
 
 void showServerSettings(OverlayDialogManager dialogManager,
-    void Function(VoidCallback) setState) async {
-  Map<String, dynamic> options = {};
+    void Function(VoidCallback) upSetState) async {
+  List<ServerProfile> profiles = [];
   try {
-    options = jsonDecode(await bind.mainGetOptions());
+    String profilesStr = await bind.mainGetOption(key: 'server-profiles');
+    if (profilesStr.isNotEmpty) {
+      List<dynamic> jsonList = jsonDecode(profilesStr);
+      profiles = jsonList.map((e) => ServerProfile.fromJson(e)).toList();
+    }
   } catch (e) {
-    print("Invalid server config: $e");
+    print("Failed to decode server-profiles: $e");
   }
-  showServerSettingsWithValue(
-      ServerConfig.fromOptions(options), dialogManager, setState);
+
+  // To support legacy, if profiles is empty, let's load legacy custom-rendezvous-server and make it the first profile if exists.
+  if (profiles.isEmpty) {
+    try {
+      Map<String, dynamic> options = jsonDecode(await bind.mainGetOptions());
+      final sc = ServerConfig.fromOptions(options);
+      if (sc.idServer.isNotEmpty) {
+        profiles.add(ServerProfile(
+          friendlyName: 'Default',
+          enabled: true,
+          idServer: sc.idServer,
+          relayServer: sc.relayServer,
+          apiServer: sc.apiServer,
+          key: sc.key,
+        ));
+      }
+    } catch(e) {}
+  }
+
+  dialogManager.show((setState, close, context) {
+    Future<void> saveProfiles() async {
+      final jsonStr = jsonEncode(profiles.map((e) => e.toJson()).toList());
+      await bind.mainSetOption(key: 'server-profiles', value: jsonStr);
+      upSetState.call(() {});
+    }
+
+    void editProfile(int index) {
+      ServerProfile? p = index >= 0 ? profiles[index] : null;
+      showServerProfileEditor(p, dialogManager, (ServerProfile newP) {
+        setState(() {
+          if (index >= 0) {
+            profiles[index] = newP;
+          } else {
+            profiles.add(newP);
+          }
+        });
+        saveProfiles();
+      });
+    }
+
+    return CustomAlertDialog(
+      title: Text(translate('Server Profiles')),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 500),
+        child: profiles.isEmpty 
+          ? Center(child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(translate("No profiles found.")),
+            ))
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: profiles.asMap().entries.map((entry) {
+                final index = entry.key;
+                final p = entry.value;
+                return ListTile(
+                  title: Text(p.friendlyName.isNotEmpty ? p.friendlyName : p.idServer),
+                  subtitle: Text(p.idServer),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Switch(
+                        value: p.enabled,
+                        onChanged: (v) {
+                          setState(() { p.enabled = v; });
+                          saveProfiles();
+                        },
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () => editProfile(index),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete, color: Colors.red),
+                        onPressed: () {
+                          setState(() { profiles.removeAt(index); });
+                          saveProfiles();
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+      ),
+      actions: [
+        dialogButton('Add', onPressed: () => editProfile(-1)),
+        dialogButton('Close', onPressed: () => close(), isOutline: true),
+      ],
+    );
+  });
 }
 
 void showServerSettingsWithValue(
-    ServerConfig serverConfig,
+    ServerConfig sc, OverlayDialogManager dialogManager, void Function(VoidCallback)? setState) {
+  // Backwards compatibility for scan_page.dart that calls this directly with ServerConfig
+  showServerProfileEditor(
+    ServerProfile(
+      idServer: sc.idServer,
+      relayServer: sc.relayServer,
+      apiServer: sc.apiServer,
+      key: sc.key,
+      friendlyName: sc.idServer,
+    ),
+    dialogManager,
+    (ServerProfile newP) async {
+      await bind.mainSetOption(key: 'custom-rendezvous-server', value: newP.idServer);
+      await bind.mainSetOption(key: 'relay-server', value: newP.relayServer);
+      await bind.mainSetOption(key: 'api-server', value: newP.apiServer);
+      await bind.mainSetOption(key: 'key', value: newP.key);
+      
+      // Also inject to server-profiles to align with new logic
+      try {
+        String profilesStr = await bind.mainGetOption(key: 'server-profiles');
+        List<dynamic> jsonList = profilesStr.isNotEmpty ? jsonDecode(profilesStr) : [];
+        List<ServerProfile> profiles = jsonList.map((e) => ServerProfile.fromJson(e)).toList();
+        
+        int idx = profiles.indexWhere((p) => p.idServer == newP.idServer);
+        if (idx >= 0) profiles[idx] = newP;
+        else profiles.add(newP);
+        
+        await bind.mainSetOption(key: 'server-profiles', value: jsonEncode(profiles.map((e) => e.toJson()).toList()));
+      } catch (e) {}
+
+      setState?.call(() {});
+    }
+  );
+}
+
+void showServerProfileEditor(
+    ServerProfile? profile,
     OverlayDialogManager dialogManager,
-    void Function(VoidCallback)? upSetState) async {
-  var isInProgress = false;
-  final idCtrl = TextEditingController(text: serverConfig.idServer);
-  final relayCtrl = TextEditingController(text: serverConfig.relayServer);
-  final apiCtrl = TextEditingController(text: serverConfig.apiServer);
-  final keyCtrl = TextEditingController(text: serverConfig.key);
+    void Function(ServerProfile) onSave) async {
+  final nameCtrl = TextEditingController(text: profile?.friendlyName ?? '');
+  final idCtrl = TextEditingController(text: profile?.idServer ?? '');
+  final relayCtrl = TextEditingController(text: profile?.relayServer ?? '');
+  final apiCtrl = TextEditingController(text: profile?.apiServer ?? '');
+  final keyCtrl = TextEditingController(text: profile?.key ?? '');
 
   RxString idServerMsg = ''.obs;
   RxString relayServerMsg = ''.obs;
@@ -88,26 +216,21 @@ void showServerSettingsWithValue(
 
   dialogManager.show((setState, close, context) {
     Future<bool> submit() async {
-      setState(() {
-        isInProgress = true;
-      });
-      bool ret = await setServerConfig(
-          null,
-          errMsgs,
-          ServerConfig(
-              idServer: idCtrl.text.trim(),
-              relayServer: relayCtrl.text.trim(),
-              apiServer: apiCtrl.text.trim(),
-              key: keyCtrl.text.trim()));
-      setState(() {
-        isInProgress = false;
-      });
-      return ret;
+      if (idCtrl.text.trim().isEmpty) return false;
+      onSave(ServerProfile(
+        friendlyName: nameCtrl.text.trim(),
+        enabled: profile?.enabled ?? true,
+        idServer: idCtrl.text.trim(),
+        relayServer: relayCtrl.text.trim(),
+        apiServer: apiCtrl.text.trim(),
+        key: keyCtrl.text.trim(),
+      ));
+      return true;
     }
 
     Widget buildField(
         String label, TextEditingController controller, String errorMsg,
-        {String? Function(String?)? validator, bool autofocus = false}) {
+        {String? Function(String?)? validator, bool autofocus = false, int? maxLines = 1}) {
       if (isDesktop || isWeb) {
         return Row(
           children: [
@@ -120,10 +243,12 @@ void showServerSettingsWithValue(
               child: serverSettingsTextFormField(
                 label: label,
                 controller: controller,
-                errorMsg: errorMsg,
-                contentPadding:
-                    EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-                showLabelText: false,
+                maxLines: maxLines,
+                decoration: InputDecoration(
+                  errorText: errorMsg.isEmpty ? null : errorMsg,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                ),
                 validator: validator,
                 autofocus: autofocus,
               ).workaroundFreezeLinuxMint(),
@@ -135,7 +260,11 @@ void showServerSettingsWithValue(
       return serverSettingsTextFormField(
         label: label,
         controller: controller,
-        errorMsg: errorMsg,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          errorText: errorMsg.isEmpty ? null : errorMsg,
+        ),
         validator: validator,
       ).workaroundFreezeLinuxMint();
     }
@@ -143,7 +272,7 @@ void showServerSettingsWithValue(
     return CustomAlertDialog(
       title: Row(
         children: [
-          Expanded(child: Text(translate('ID/Relay Server'))),
+          Expanded(child: Text(translate(profile == null ? 'Add Server Profile' : 'Edit Server Profile'))),
           ...ServerConfigImportExportWidgets(controllers, errMsgs),
         ],
       ),
@@ -153,12 +282,14 @@ void showServerSettingsWithValue(
           child: Obx(() => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  buildField(translate('Friendly Name'), nameCtrl, ''),
+                  SizedBox(height: 8),
                   buildField(translate('ID Server'), idCtrl, idServerMsg.value,
                       autofocus: true),
                   SizedBox(height: 8),
                   if (!isIOS && !isWeb) ...[
                     buildField(translate('Relay Server'), relayCtrl,
-                        relayServerMsg.value),
+                        relayServerMsg.value, maxLines: null),
                     SizedBox(height: 8),
                   ],
                   buildField(
@@ -177,11 +308,6 @@ void showServerSettingsWithValue(
                   ),
                   SizedBox(height: 8),
                   buildField('Key', keyCtrl, ''),
-                  if (isInProgress)
-                    Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: LinearProgressIndicator(),
-                    ),
                 ],
               )),
         ),
@@ -196,7 +322,6 @@ void showServerSettingsWithValue(
             if (await submit()) {
               close();
               showToast(translate('Successful'));
-              upSetState?.call(() {});
             } else {
               showToast(translate('Failed'));
             }

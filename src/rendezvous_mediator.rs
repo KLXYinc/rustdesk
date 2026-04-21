@@ -113,6 +113,68 @@ impl RendezvousMediator {
         log::info!("server restart");
     }
 
+    pub async fn preflight_server_profiles(id: &str) -> std::result::Result<Option<hbb_common::config::ServerProfile>, ()> {
+        let profiles_str = Config::get_option("server-profiles");
+        let profiles: Vec<hbb_common::config::ServerProfile> = serde_json::from_str(&profiles_str).unwrap_or_default();
+        if profiles.is_empty() {
+            return Ok(None);
+        }
+        
+        let target_id = id.to_owned();
+        let timeout_dur = Duration::from_millis(500);
+        let mut futures = Vec::new();
+        for profile in profiles {
+            if !profile.enabled {
+                continue;
+            }
+            let id_server = profile.id_server.clone();
+            let mut host = id_server.clone();
+            if !host.contains(':') {
+                host = format!("{}:{}", host, RENDEZVOUS_PORT);
+            }
+            let target_id_clone = target_id.clone();
+            futures.push(tokio::spawn(async move {
+                if let Ok(Ok((mut socket, _))) = tokio::time::timeout(timeout_dur, new_udp_for(&host, config::CONNECT_TIMEOUT)).await {
+                    let mut msg_out = Message::new();
+                    msg_out.set_punch_hole_request(PunchHoleRequest {
+                        id: target_id_clone,
+                        nat_type: hbb_common::rendezvous_proto::NatType::UNKNOWN_NAT.into(),
+                        licence_key: profile.key.clone(),
+                        ..Default::default()
+                    });
+                    if socket.send(&msg_out, host.as_str()).await.is_ok() {
+                        if let Ok(Some(Ok((bytes, _)))) = tokio::time::timeout(timeout_dur, socket.next()).await {
+                            if let Ok(msg_in) = Message::parse_from_bytes(&bytes) {
+                                if let Some(rendezvous_message::Union::PunchHoleResponse(phr)) = msg_in.union {
+                                    if phr.socket_addr.is_empty() {
+                                        return None;
+                                    }
+                                    return Some(profile);
+                                }
+                            }
+                        }
+                    }
+                }
+                None
+            }));
+        }
+
+        let mut best_profile = None;
+        while !futures.is_empty() {
+            let (res, _, remaining) = hbb_common::futures::future::select_all(futures).await;
+            futures = remaining;
+            if let Ok(Some(profile)) = res {
+                best_profile = Some(profile);
+                break;
+            }
+        }
+        if best_profile.is_some() {
+            Ok(best_profile)
+        } else {
+            Err(())
+        }
+    }
+
     pub async fn start_all() {
         crate::test_nat_type();
         if config::is_outgoing_only() {
@@ -576,7 +638,7 @@ impl RendezvousMediator {
             return Ok(());
         }
         let peer_addr_v6 = hbb_common::AddrMangle::decode(&fla.socket_addr_v6);
-        let relay_server = self.get_relay_server(fla.relay_server.clone());
+        let relay_server = self.get_relay_server_async(fla.relay_server.clone()).await;
         let relay = use_ws() || Config::is_proxy();
         let mut socket_addr_v6 = Default::default();
         let meta = connection_meta(
@@ -666,7 +728,7 @@ impl RendezvousMediator {
             socket_addr_v6 =
                 start_ipv6(peer_addr_v6, peer_addr, server.clone(), meta.clone()).await;
         }
-        let relay_server = self.get_relay_server(ph.relay_server);
+        let relay_server = self.get_relay_server_async(ph.relay_server).await;
         // for ensure, websocket go relay directly
         if ph.nat_type.enum_value() == Ok(NatType::SYMMETRIC)
             || Config::get_nat_type() == NatType::SYMMETRIC as i32
@@ -822,15 +884,48 @@ impl RendezvousMediator {
         Ok(())
     }
 
-    fn get_relay_server(&self, provided_by_rendezvous_server: String) -> String {
-        let mut relay_server = Config::get_option("relay-server");
-        if relay_server.is_empty() {
-            relay_server = provided_by_rendezvous_server;
+    async fn get_relay_server_async(&self, provided_by_rendezvous_server: String) -> String {
+        let legacy_relay = Config::get_option("relay-server");
+        let mut hosts = Vec::new();
+
+        for part in legacy_relay.split(|c| c == ',' || c == ';' || c == '\n' || c == ' ') {
+            let h = part.trim();
+            if !h.is_empty() {
+                hosts.push(crate::check_port(h, hbb_common::config::RELAY_PORT));
+            }
         }
-        if relay_server.is_empty() {
-            relay_server = crate::increase_port(&self.host, 1);
+
+        if hosts.is_empty() {
+            let mut h = provided_by_rendezvous_server;
+            if h.is_empty() {
+                h = crate::increase_port(&self.host, 1);
+            }
+            return h;
         }
-        relay_server
+
+        if hosts.len() == 1 {
+            return hosts[0].clone();
+        }
+
+        use hbb_common::futures::future::{select_ok, FutureExt};
+        let mut connect_futures = Vec::new();
+        for host in hosts.clone() {
+            let host_cloned = host.clone();
+            connect_futures.push(async move {
+                if let Ok(_stream) = connect_tcp(host_cloned.clone(), CONNECT_TIMEOUT).await {
+                    return Ok(host_cloned);
+                }
+                Err(anyhow::anyhow!("Failed to connect to {}", host_cloned))
+            }.boxed());
+        }
+
+        if let Ok((fastest_host, _)) = select_ok(connect_futures).await {
+            log::info!("Selected fastest relay: {}", fastest_host);
+            fastest_host
+        } else {
+            log::warn!("All defined relays failed to respond, falling back to first.");
+            hosts[0].clone()
+        }
     }
 }
 

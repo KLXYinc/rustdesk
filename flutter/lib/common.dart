@@ -2933,6 +2933,47 @@ bool get kUseCompatibleUiMode =>
 
 bool get isWin10 => windowsBuildNumber.windowsVersion == WindowsTarget.w10;
 
+class ServerProfile {
+  String friendlyName;
+  bool enabled;
+  String idServer;
+  String relayServer;
+  String apiServer;
+  String key;
+
+  ServerProfile({
+    this.friendlyName = '',
+    this.enabled = true,
+    required this.idServer,
+    this.relayServer = '',
+    this.apiServer = '',
+    this.key = '',
+  });
+
+  factory ServerProfile.fromJson(Map<String, dynamic> json) {
+    return ServerProfile(
+      friendlyName: json['friendly_name'] as String? ?? '',
+      enabled: json['enabled'] as bool? ?? true,
+      idServer: json['id_server'] as String? ?? '',
+      relayServer: json['relay_server'] as String? ?? '',
+      apiServer: json['api_server'] as String? ?? '',
+      key: json['key'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'friendly_name': friendlyName,
+      'enabled': enabled,
+      'id_server': idServer,
+      'relay_server': relayServer,
+      'api_server': apiServer,
+      'key': key,
+    };
+  }
+}
+
+
 class ServerConfig {
   late String idServer;
   late String relayServer;
