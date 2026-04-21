@@ -1,0 +1,76 @@
++ echo '=== Setting Environment Variables ==='
+=== Setting Environment Variables ===
++ export ANDROID_NDK_HOME=/Users/klxy/Library/Android/sdk/ndk/28.2.13676358
++ ANDROID_NDK_HOME=/Users/klxy/Library/Android/sdk/ndk/28.2.13676358
++ export VCPKG_ROOT=/Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg
++ VCPKG_ROOT=/Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg
++ export PATH=/Users/klxy/Desktop/Main/Projects/Rustdesk++/build_tools/bin:/Users/klxy/.cargo/bin:/Users/klxy/Desktop/Main/SDK/flutter/bin:/usr/bin:/bin:/usr/sbin:/sbin
++ PATH=/Users/klxy/Desktop/Main/Projects/Rustdesk++/build_tools/bin:/Users/klxy/.cargo/bin:/Users/klxy/Desktop/Main/SDK/flutter/bin:/usr/bin:/bin:/usr/sbin:/sbin
++ echo '=== Compiling C++ Dependencies (vcpkg) ==='
+=== Compiling C++ Dependencies (vcpkg) ===
++ ./flutter/build_android_deps.sh arm64-v8a
+*** [arm64-v8a][Start] Build and install vcpkg dependencies
+~/Desktop/Main/Projects/Rustdesk++ ~/Desktop/Main/Projects/Rustdesk++
+Detecting compiler hash for triplet arm64-osx...
+Compiler found: /usr/bin/c++
+Detecting compiler hash for triplet arm64-android...
+Compiler found: /Users/klxy/Library/Android/sdk/ndk/28.2.13676358/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++
+The following packages are already installed:
+  * vcpkg-cmake:arm64-osx@2024-04-23
+  * vcpkg-cmake-config:arm64-osx@2024-05-23
+The following packages will be built and installed:
+    aom:arm64-osx@3.12.1 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/aom
+    aom:arm64-android@3.12.1 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/aom
+    cpu-features:arm64-android@0.10.1
+    ffmpeg:arm64-android@7.1#1 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/ffmpeg
+    libjpeg-turbo:arm64-osx@3.1.1
+    libjpeg-turbo:arm64-android@3.1.1
+    libvpx:arm64-osx@1.15.2 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/libvpx
+    libvpx:arm64-android@1.15.2 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/libvpx
+    libyuv:arm64-osx@1857 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/libyuv
+    libyuv:arm64-android@1857 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/libyuv
+    oboe:arm64-android@1.8.0
+    opus:arm64-osx@1.5.2 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/opus
+    opus:arm64-android@1.5.2 -- /Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/opus
+  * pkgconf:arm64-osx@2.5.1
+  * vcpkg-cmake-get-vars:arm64-osx@2025-05-29
+  * vcpkg-pkgconfig-get-modules:arm64-osx@2024-04-03
+  * vcpkg-tool-meson:arm64-osx@1.8.2
+Additional packages (*) will be modified to complete this operation.
+Restored 0 package(s) from /Users/klxy/.cache/vcpkg/archives in 46.3 us. Use --debug to see more details.
+Installing 1/17 aom:arm64-osx@3.12.1...
+aom:arm64-osx@3.12.1 package ABI: 5590008ba7d75e518b13fc61189e7c04e6554ee579f69eca778cd48a7c3f7dfb
+Building aom:arm64-osx@3.12.1...
+/Users/klxy/Desktop/Main/Projects/Rustdesk++/./res/vcpkg/aom: info: installing overlay port from here
+-- Fetching https://aomedia.googlesource.com/aom 10aece4157eb79315da205f39e19bf6ab3ee30d0...
+-- Extracting source /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/downloads/aom-10aece4157eb79315da205f39e19bf6ab3ee30d0.tar.gz
+-- Applying patch aom-uninitialized-pointer.diff
+-- Applying patch aom-install.diff
+-- Using source at /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/src/6ab3ee30d0-9aa1729981.clean
+-- Configuring arm64-osx
+CMake Error at scripts/cmake/vcpkg_execute_required_process.cmake:127 (message):
+    Command failed: /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/downloads/tools/ninja-1.13.2-osx/ninja -v
+    Working Directory: /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/arm64-osx-rel/vcpkg-parallel-configure
+    Error code: 1
+    See logs for more information:
+      /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/config-arm64-osx-dbg-CMakeCache.txt.log
+      /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/config-arm64-osx-rel-CMakeCache.txt.log
+      /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/config-arm64-osx-dbg-CMakeConfigureLog.yaml.log
+      /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/config-arm64-osx-rel-CMakeConfigureLog.yaml.log
+      /Users/klxy/Desktop/Main/Projects/Rustdesk++/vcpkg/buildtrees/aom/config-arm64-osx-out.log
+
+Call Stack (most recent call first):
+  installed/arm64-osx/share/vcpkg-cmake/vcpkg_cmake_configure.cmake:269 (vcpkg_execute_required_process)
+  /Users/klxy/Desktop/Main/Projects/Rustdesk++/res/vcpkg/aom/portfile.cmake:45 (vcpkg_cmake_configure)
+  scripts/ports.cmake:206 (include)
+
+
+error: building aom:arm64-osx failed with: BUILD_FAILED
+See https://learn.microsoft.com/vcpkg/troubleshoot/build-failures?WT.mc_id=vcpkg_inproduct_cli for more information.
+Elapsed time to handle aom:arm64-osx: 16 s
+Please ensure you're using the latest port files with `git pull` and `vcpkg update`.
+Then check for known issues at:
+  https://github.com/microsoft/vcpkg/issues?q=is%3Aissue+is%3Aopen+in%3Atitle+aom
+You can submit a new issue at:
+  https://github.com/microsoft/vcpkg/issues/new?title=%5Baom%5D%20build%20error%20on%20arm64-osx&body=Copy%20issue%20body%20from%20%2FUsers%2Fklxy%2FDesktop%2FMain%2FProjects%2FRustdesk%2B%2B%2Fvcpkg%2Finstalled%2Fvcpkg%2Fissue_body.md
+

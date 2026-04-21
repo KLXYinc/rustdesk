@@ -10,7 +10,6 @@ import flutter_custom_cursor
 import package_info_plus
 import path_provider_foundation
 import screen_retriever
-import sqflite
 // import tray_manager
 import uni_links_desktop
 import url_launcher_macos
@@ -58,7 +57,6 @@ class MainFlutterWindow: NSWindow {
             FlutterCustomCursorPlugin.register(with: controller.registrar(forPlugin: "FlutterCustomCursorPlugin"))
             FPPPackageInfoPlusPlugin.register(with: controller.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
             PathProviderPlugin.register(with: controller.registrar(forPlugin: "PathProviderPlugin"))
-            SqflitePlugin.register(with: controller.registrar(forPlugin: "SqflitePlugin"))
             // TrayManagerPlugin.register(with: controller.registrar(forPlugin: "TrayManagerPlugin"))
             UniLinksDesktopPlugin.register(with: controller.registrar(forPlugin: "UniLinksDesktopPlugin"))
             UrlLauncherPlugin.register(with: controller.registrar(forPlugin: "UrlLauncherPlugin"))

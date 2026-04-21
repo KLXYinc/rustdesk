@@ -1,3 +1,6 @@
+buildscript {
+    ext.kotlin_version = '2.1.21'
+}
 allprojects {
     repositories {
         google()
@@ -9,6 +12,23 @@ allprojects {
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    def manifestPath = project.file('src/main/AndroidManifest.xml')
+                    if (manifestPath.exists()) {
+                        def manifest = new XmlParser().parse(manifestPath)
+                        namespace = manifest.@package
+                    } else {
+                        namespace = project.group
+                    }
+                }
+            }
+        }
+    }
 }
 subprojects {
     project.evaluationDependsOn(':app')

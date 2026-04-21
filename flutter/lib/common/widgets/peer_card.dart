@@ -25,6 +25,22 @@ final peerCardUiType = PeerUiType.grid.obs;
 
 bool? hideUsernameOnCard;
 
+const List<Color> _kPremiumPalette = [
+  Color(0xFF5E81AC), // Nordic Blue
+  Color(0xFF81A1C1), // Soft Blue
+  Color(0xFFA3BE8C), // Mint Green
+  Color(0xFFB48EAD), // Muted Purple
+  Color(0xFFD08770), // Soft Orange
+  Color(0xFFBF616A), // Soft Red
+  Color(0xFF88C0D0), // Cyan
+];
+
+Color _getPremiumColor(String id) {
+  if (id.isEmpty) return _kPremiumPalette[0];
+  int sum = id.codeUnits.fold(0, (p, c) => p + c);
+  return _kPremiumPalette[sum % _kPremiumPalette.length].withOpacity(0.85);
+}
+
 class _PeerCard extends StatefulWidget {
   final Peer peer;
   final PeerTabIndex tab;
@@ -145,7 +161,7 @@ class _PeerCardState extends State<_PeerCard>
       children: [
         Container(
             decoration: BoxDecoration(
-              color: str2color('${peer.id}${peer.platform}', 0x7f),
+              color: _getPremiumColor('${peer.id}${peer.platform}'),
               borderRadius: isPortrait
                   ? BorderRadius.circular(_tileRadius)
                   : BorderRadius.only(
@@ -158,7 +174,7 @@ class _PeerCardState extends State<_PeerCard>
             height: isPortrait ? 50 : null,
             child: Stack(
               children: [
-                getPlatformImage(peer.platform, size: isPortrait ? 38 : 30)
+                getPlatformImage(peer.platform, size: isPortrait ? 28 : 22)
                     .paddingAll(6),
                 if (_shouldBuildPasswordIcon(peer))
                   Positioned(
@@ -303,7 +319,7 @@ class _PeerCardState extends State<_PeerCard>
               children: [
                 Expanded(
                   child: Container(
-                    color: str2color('${peer.id}${peer.platform}', 0x7f),
+                    color: _getPremiumColor('${peer.id}${peer.platform}'),
                     child: Row(
                       children: [
                         Expanded(
@@ -313,7 +329,7 @@ class _PeerCardState extends State<_PeerCard>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 child:
-                                    getPlatformImage(peer.platform, size: 60),
+                                    getPlatformImage(peer.platform, size: 42),
                               ),
                               Row(
                                 children: [
