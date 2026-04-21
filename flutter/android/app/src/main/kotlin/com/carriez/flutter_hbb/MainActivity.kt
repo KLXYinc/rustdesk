@@ -41,6 +41,7 @@ class MainActivity : FlutterActivity() {
         private var _rdClipboardManager: RdClipboardManager? = null
         val rdClipboardManager: RdClipboardManager?
             get() = _rdClipboardManager;
+        var isClientConnected = false
     }
 
     private val channelTag = "mChannel"
@@ -274,6 +275,14 @@ class MainActivity : FlutterActivity() {
                 "on_voice_call_closed" -> {
                     onVoiceCallClosed()
                 }
+                "set_client_connected" -> {
+                    if (call.arguments is Boolean) {
+                        isClientConnected = call.arguments as Boolean
+                        result.success(true)
+                    } else {
+                        result.success(false)
+                    }
+                }
                 else -> {
                     result.error("-1", "No such method", null)
                 }
@@ -403,7 +412,7 @@ class MainActivity : FlutterActivity() {
     override fun onStop() {
         super.onStop()
         val disableFloatingWindow = FFI.getLocalOption("disable-floating-window") == "Y"
-        if (!disableFloatingWindow && MainService.isReady) {
+        if (!disableFloatingWindow && (MainService.isReady || isClientConnected)) {
             startService(Intent(this, FloatingWindowService::class.java))
         }
     }
