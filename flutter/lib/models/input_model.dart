@@ -738,6 +738,14 @@ class InputModel {
   KeyEventResult handleRawKeyEvent(RawKeyEvent e) {
     if (isViewOnly) return KeyEventResult.handled;
     if (isViewCamera) return KeyEventResult.handled;
+
+    if (isMobile) {
+      if (e.physicalKey == PhysicalKeyboardKey.audioVolumeUp ||
+          e.physicalKey == PhysicalKeyboardKey.audioVolumeDown ||
+          e.physicalKey == PhysicalKeyboardKey.audioVolumeMute) {
+        return KeyEventResult.ignored;
+      }
+    }
     if (!isInputSourceFlutter) {
       if (isDesktop) {
         return KeyEventResult.handled;
@@ -823,6 +831,14 @@ class InputModel {
   KeyEventResult handleKeyEvent(KeyEvent e) {
     if (isViewOnly) return KeyEventResult.handled;
     if (isViewCamera) return KeyEventResult.handled;
+
+    if (isMobile) {
+      if (e.physicalKey == PhysicalKeyboardKey.audioVolumeUp ||
+          e.physicalKey == PhysicalKeyboardKey.audioVolumeDown ||
+          e.physicalKey == PhysicalKeyboardKey.audioVolumeMute) {
+        return KeyEventResult.ignored;
+      }
+    }
     if (!isInputSourceFlutter) {
       if (isDesktop) {
         return KeyEventResult.handled;
