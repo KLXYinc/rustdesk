@@ -1956,7 +1956,7 @@ pub async fn io_loop<T: InvokeUiSession>(handler: Session<T>, round: u32) {
     #[cfg(not(target_os = "ios"))]
     let preflight_fut = crate::rendezvous_mediator::RendezvousMediator::preflight_server_profiles(&peer_id);
     #[cfg(target_os = "ios")]
-    let preflight_fut = std::future::ready(Err(()));
+    let preflight_fut: std::future::Ready<Result<Option<crate::rendezvous_mediator::Profile>, ()>> = std::future::ready(Err(()));
 
     tokio::select! {
         res = preflight_fut => {
