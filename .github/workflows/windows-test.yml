@@ -200,6 +200,7 @@ jobs:
         if: ${{ matrix.job.arch == 'aarch64' }}
         shell: bash
         run: |
+          bash .github/patches/apply_flutter_3.44_source_patches.sh
           sed -i -E 's/video_player_platform_interface: "\^6.1.0"/video_player_platform_interface: "\^6.2.2"/g' flutter/pubspec.yaml
           sed -i -e 's/maxLines: null/maxLines: 1/g' flutter/lib/mobile/widgets/dialog.dart
       - name: Install Rust toolchain
