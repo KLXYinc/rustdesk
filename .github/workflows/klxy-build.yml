@@ -1,9 +1,9 @@
 name: Klxy Build
 
 on:
-  push:
-    branches:
-      - klxy
+  # push:
+    # branches:
+      # - klxy
   workflow_dispatch:
 
 jobs:
