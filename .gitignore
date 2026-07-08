@@ -57,3 +57,8 @@ flutter/lib/generated_plugin_registrant.dart
 libsciter.dylib
 flutter/web/
 vcpkg/*
+
+# Isolated Workspace
+.tools/
+env.sh
+bootstrap_env.sh
