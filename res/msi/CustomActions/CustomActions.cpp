@@ -752,7 +752,7 @@ UINT __stdcall AddRegSoftwareSASGeneration(__in MSIHANDLE hInstall)
         goto LExit;
     }
 
-    result = RegSetValueExW(hKey, valueName, 0, valueType, reinterpret_cast<const BYTE*>(valueData), valueDataSize);
+    result = RegSetValueExW(hKey, valueName, 0, valueType, reinterpret_cast<const BYTE*>(&valueData), valueDataSize);
     if (result != ERROR_SUCCESS) {
         WcaLog(LOGMSG_STANDARD, "Failed to set registry value: %d", result);
         RegCloseKey(hKey);
@@ -867,7 +867,7 @@ void TryCreateStartServiceByShell(LPWSTR svcName, LPWSTR svcBinary, LPWSTR szSvc
         if (svcBinary[j] == L'"') {
             szNewBin[i] = L'\\';
             i += 1;
-            if (i >= cchNewBin) {
+            if ((DWORD)i >= cchNewBin) {
                 WcaLog(LOGMSG_STANDARD, "Failed to copy bin for service: %ls, buffer is not enough", svcName);
                 return;
             }
@@ -881,7 +881,7 @@ void TryCreateStartServiceByShell(LPWSTR svcName, LPWSTR svcBinary, LPWSTR szSvc
         }
         i += 1;
         j += 1;
-        if (i >= cchNewBin) {
+        if ((DWORD)i >= cchNewBin) {
             WcaLog(LOGMSG_STANDARD, "Failed to copy bin for service: %ls, buffer is not enough", svcName);
             return;
         }
