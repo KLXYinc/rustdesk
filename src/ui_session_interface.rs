@@ -1953,8 +1953,13 @@ pub async fn io_loop<T: InvokeUiSession>(handler: Session<T>, round: u32) {
 
     let mut preflight_aborted = false;
     let peer_id = handler.get_id();
+    #[cfg(not(target_os = "ios"))]
+    let preflight_fut = crate::rendezvous_mediator::RendezvousMediator::preflight_server_profiles(&peer_id);
+    #[cfg(target_os = "ios")]
+    let preflight_fut = std::future::ready(Err(()));
+
     tokio::select! {
-        res = crate::rendezvous_mediator::RendezvousMediator::preflight_server_profiles(&peer_id) => {
+        res = preflight_fut => {
             match res {
                 Ok(Some(profile)) => {
                     handler.lc.write().unwrap().other_server = Some((handler.get_id(), profile.id_server, profile.key));

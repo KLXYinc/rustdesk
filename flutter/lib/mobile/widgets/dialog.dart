@@ -240,8 +240,7 @@ void showServerProfileEditor(
             ),
             SizedBox(width: 8),
             Expanded(
-              child: serverSettingsTextFormField(
-                label: label,
+              child: TextFormField(
                 controller: controller,
                 maxLines: maxLines,
                 decoration: InputDecoration(
@@ -257,8 +256,7 @@ void showServerProfileEditor(
         );
       }
 
-      return serverSettingsTextFormField(
-        label: label,
+      return TextFormField(
         controller: controller,
         maxLines: maxLines,
         decoration: InputDecoration(
