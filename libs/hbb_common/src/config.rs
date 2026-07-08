@@ -4018,3 +4018,19 @@ mod tests {
         assert_ne!(non_service_root, non_service_user);
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ServerProfile {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default, rename = "friendlyName")]
+    pub friendly_name: String,
+    #[serde(default, rename = "idServer")]
+    pub id_server: String,
+    #[serde(default, rename = "relayServer")]
+    pub relay_server: String,
+    #[serde(default, rename = "apiServer")]
+    pub api_server: String,
+    #[serde(default)]
+    pub key: String,
+}
