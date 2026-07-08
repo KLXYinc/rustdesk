@@ -25,10 +25,10 @@ env:
   SCITER_ARMV7_CMAKE_VERSION: "3.29.7"
   SCITER_NASM_DEBVERSION: "2.15.05-1"
   LLVM_VERSION: "15.0.6"
-  FLUTTER_VERSION: "3.44.5"
-  ANDROID_FLUTTER_VERSION: "3.44.5"
-  FLUTTER_WINDOWS_ARM_VERSION: "3.44.5"
-  FLUTTER_ELINUX_VERSION: "3.44.5"
+  FLUTTER_VERSION: "3.24.5"
+  ANDROID_FLUTTER_VERSION: "3.24.5"
+  FLUTTER_WINDOWS_ARM_VERSION: "3.44.0"
+  FLUTTER_ELINUX_VERSION: "3.16.9"
   TAG_NAME: "${{ inputs.upload-tag }}"
   VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
   # vcpkg version: 2025.08.27
@@ -183,8 +183,25 @@ jobs:
           Expand-Archive -Path windows-x64-release.zip -DestinationPath windows-x64-release
           mv -Force windows-x64-release/*  C:/hostedtoolcache/windows/flutter/stable-${{ env.FLUTTER_VERSION }}-x64/bin/cache/artifacts/engine/windows-x64-release/
 
+      - name: Patch flutter
+        # x64 stays on Flutter 3.24.5, which needs the dropdown filter patch.
+        # arm64 is on Flutter 3.44 (patched separately below) and does not use this patch.
+        if: ${{ matrix.job.arch == 'x86_64' }}
+        shell: bash
+        run: |
+          cp .github/patches/flutter_3.24.4_dropdown_menu_enableFilter.diff $(dirname $(dirname $(which flutter)))
+          cd $(dirname $(dirname $(which flutter)))
+          [[ "3.24.5" == ${{env.FLUTTER_VERSION}} ]] && git apply flutter_3.24.4_dropdown_menu_enableFilter.diff
 
-
+      - name: Patch RustDesk sources for Flutter 3.44 (arm64)
+        # arm64 is the only target on Flutter 3.44; apply its source/pubspec deltas on the fly
+        # here instead of mainlining them while all other architectures are still on 3.24.
+        # `flutter build` then runs `pub get`, regenerating pubspec.lock for the bumped deps.
+        if: ${{ matrix.job.arch == 'aarch64' }}
+        shell: bash
+        run: |
+          sed -i -E 's/video_player_platform_interface: "\^6.1.0"/video_player_platform_interface: "\^6.2.2"/g' flutter/pubspec.yaml
+          sed -i -e 's/maxLines: null/maxLines: 1/g' flutter/lib/mobile/widgets/dialog.dart
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
         with:
